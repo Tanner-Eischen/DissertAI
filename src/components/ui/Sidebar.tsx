@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, FileText, Plus } from 'lucide-react';
+import { useDocumentStore } from '@/store/useDocumentStore';
+import { createDocument, loadDocuments } from '@/services/documentService';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -7,11 +9,57 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
-  const [documents] = useState([
-    { id: '1', title: 'Research Paper Draft', updatedAt: '2 hours ago' },
-    { id: '2', title: 'Essay Outline', updatedAt: '1 day ago' },
-    { id: '3', title: 'Meeting Notes', updatedAt: '3 days ago' },
-  ]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { currentDoc, setDoc } = useDocumentStore();
+
+  // Load documents on component mount
+  useEffect(() => {
+    loadDocumentList();
+  }, []);
+
+  const loadDocumentList = async () => {
+    try {
+      const docs = await loadDocuments();
+      setDocuments(docs);
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+    }
+  };
+
+  const handleNewDocument = async () => {
+    if (loading) return;
+    
+    setLoading(true);
+    try {
+      const newDoc = await createDocument('Untitled Document');
+      setDoc(newDoc);
+      await loadDocumentList(); // Refresh the list
+    } catch (error) {
+      console.error('Failed to create document:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectDocument = (doc: any) => {
+    setDoc(doc);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return '1 day ago';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    
+    return date.toLocaleDateString();
+  };
 
   return (
     <aside className={`bg-white border-r border-gray-200 transition-all duration-300 ${
@@ -36,30 +84,53 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
 
         {!isCollapsed && (
           <>
-            <button className="btn-primary w-full mb-4">
+            <button 
+              onClick={handleNewDocument}
+              disabled={loading}
+              className="btn-primary w-full mb-4 disabled:opacity-50"
+            >
               <Plus className="w-4 h-4 mr-2" />
-              New Document
+              {loading ? 'Creating...' : 'New Document'}
             </button>
 
             <div className="space-y-2">
               {documents.map((doc) => (
                 <div
                   key={doc.id}
-                  className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                  onClick={() => handleSelectDocument(doc)}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors group ${
+                    currentDoc?.id === doc.id 
+                      ? 'bg-primary-50 border border-primary-200' 
+                      : 'hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex items-start space-x-3">
-                    <FileText className="w-4 h-4 text-gray-400 mt-0.5 group-hover:text-primary-500" />
+                    <FileText className={`w-4 h-4 mt-0.5 ${
+                      currentDoc?.id === doc.id 
+                        ? 'text-primary-600' 
+                        : 'text-gray-400 group-hover:text-primary-500'
+                    }`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {doc.title}
+                      <p className={`text-sm font-medium truncate ${
+                        currentDoc?.id === doc.id ? 'text-primary-900' : 'text-gray-900'
+                      }`}>
+                        {doc.title || 'Untitled Document'}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {doc.updatedAt}
+                        {formatDate(doc.updated_at || doc.created_at)}
                       </p>
                     </div>
                   </div>
                 </div>
               ))}
+              
+              {documents.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                  <p className="text-sm">No documents yet</p>
+                  <p className="text-xs">Create your first document</p>
+                </div>
+              )}
             </div>
           </>
         )}

@@ -15,12 +15,19 @@ export default function Editor() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [wordCount, setWordCount] = useState(0);
 
+  // Only create a document if none exists
   useEffect(() => {
-    (async () => {
-      const doc = await createDocument();
-      setDoc(doc);
-    })();
-  }, []);
+    if (!currentDoc) {
+      (async () => {
+        try {
+          const doc = await createDocument();
+          setDoc(doc);
+        } catch (error) {
+          console.error('Failed to create initial document:', error);
+        }
+      })();
+    }
+  }, [currentDoc, setDoc]);
 
   useEffect(() => {
     if (currentDoc?.content) {
