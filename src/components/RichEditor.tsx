@@ -16,6 +16,11 @@ export function RichEditor({ value, onChange, highlights = [] }: Props) {
     onUpdate: ({ editor }) => {
       onChange(editor.getText());
     },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-lg max-w-none focus:outline-none',
+      },
+    },
   });
 
   // Apply highlight marks
@@ -33,8 +38,10 @@ export function RichEditor({ value, onChange, highlights = [] }: Props) {
   }, [editor, highlights]);
 
   return (
-    <div className="border p-2 min-h-[300px]">
-      <EditorContent editor={editor} />
+    <div className="card flex-1 overflow-hidden">
+      <div className="h-full overflow-y-auto">
+        <EditorContent editor={editor} className="h-full" />
+      </div>
     </div>
   );
 }
