@@ -7,7 +7,8 @@ import {
   FileText,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Check
 } from 'lucide-react';
 import { TOOLS, ToolName } from '@/constants/tools';
 import { useDocumentStore } from '@/store/useDocumentStore';
@@ -16,8 +17,11 @@ import { ArgumentGraph } from './ai-tools/ArgumentGraph';
 import { CitationHarmonizer } from './ai-tools/CitationHarmonizer';
 import { VirtualReviewer } from './ai-tools/VirtualReviewer';
 import { AbstractSynthesizer } from './ai-tools/AbstractSynthesizer';
+import { GrammarChecker } from './ai-tools/GrammarChecker';
+
 
 const toolIcons = {
+  'spellcheck': Check,
   'argument-mapper': Brain,
   'citation-annotator': Quote,
   'optimize-thesis': Target,
@@ -25,8 +29,13 @@ const toolIcons = {
   'abstract-synthesizer': FileText,
 } as const;
 
-export function ToolTabs() {
-  const [activeTab, setActiveTab] = useState<ToolName>('argument-mapper');
+interface Props {
+  onGrammarErrorsChange?: (errors: Array<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation'; message: string; incorrect: string; correction: string }>) => void;
+  onApplyFix?: (start: number, end: number, correction: string) => void;
+}
+
+export function ToolTabs({ onGrammarErrorsChange, onApplyFix }: Props = {}) {
+  const [activeTab, setActiveTab] = useState<ToolName>('spellcheck');
   const [isExpanded, setIsExpanded] = useState(true);
   const { currentDoc } = useDocumentStore();
 
@@ -41,6 +50,14 @@ export function ToolTabs() {
     }
 
     switch (activeTab) {
+      case 'spellcheck':
+        return <GrammarChecker 
+          documentId={currentDoc.id} 
+          documentText={currentDoc.content || ''} 
+          onErrorsChange={onGrammarErrorsChange}
+          onApplyFix={onApplyFix}
+        />;
+
       case 'argument-mapper':
         return <ArgumentGraph documentId={currentDoc.id} documentText={currentDoc.content || ''} />;
       case 'citation-annotator':

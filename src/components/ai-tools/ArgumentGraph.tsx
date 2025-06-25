@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Brain, Loader2, Network } from 'lucide-react';
 import { aiService } from '@/lib/ai';
+import { ResponseDisplay } from './ResponseDisplay';
 
 interface Props {
   documentId: string;
@@ -19,9 +20,12 @@ export function ArgumentGraph({ documentId, documentText }: Props) {
 
     setLoading(true);
     try {
+      console.log('Sending text to argument mapper:', documentText); // Debug log
       const res = await aiService.generateArgumentMap(documentId, documentText);
+      console.log('Argument mapper response:', res); // Debug log
       setResult(typeof res === 'string' ? res : JSON.stringify(res, null, 2));
     } catch (error) {
+      console.error('Argument mapper error:', error); // Debug log
       setResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
@@ -59,15 +63,12 @@ export function ArgumentGraph({ documentId, documentText }: Props) {
         </div>
       </div>
 
-      {result && (
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <h5 className="font-medium text-gray-900 mb-3">Argument Analysis</h5>
-          <div className="prose prose-sm max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
-              {result}
-            </pre>
-          </div>
-        </div>
+      {(result || loading) && (
+        <ResponseDisplay
+          title="Argument Analysis"
+          content={result || ''}
+          isLoading={loading}
+        />
       )}
     </div>
   );

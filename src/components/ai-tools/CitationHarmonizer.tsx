@@ -1,10 +1,54 @@
 import { useState } from 'react';
 import { Quote, Loader2, BookOpen } from 'lucide-react';
 import { aiService } from '@/lib/ai';
+import { ResponseDisplay } from './ResponseDisplay';
 
 type Props = {
   documentId: string;
   documentText: string;
+};
+
+// Helper function to convert JSON object to formatted text
+const formatJsonToText = (obj: any): string => {
+  const formatValue = (value: any, depth: number = 0): string => {
+    const indent = '  '.repeat(depth);
+    
+    if (typeof value === 'string') {
+      return value;
+    }
+    
+    if (Array.isArray(value)) {
+      return value.map(item => {
+        if (typeof item === 'string') {
+          return `• ${item}`;
+        } else if (typeof item === 'object' && item !== null) {
+          return formatValue(item, depth + 1);
+        }
+        return `• ${String(item)}`;
+      }).join('\n');
+    }
+    
+    if (typeof value === 'object' && value !== null) {
+      return Object.entries(value).map(([key, val]) => {
+        const formattedKey = key.replace(/([A-Z])/g, ' $1')
+          .replace(/^./, str => str.toUpperCase())
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        if (Array.isArray(val)) {
+          return `## ${formattedKey}\n\n${formatValue(val, depth + 1)}`;
+        } else if (typeof val === 'object' && val !== null) {
+          return `## ${formattedKey}\n\n${formatValue(val, depth + 1)}`;
+        } else {
+          return `**${formattedKey}:** ${String(val)}`;
+        }
+      }).join('\n\n');
+    }
+    
+    return String(value);
+  };
+  
+  return formatValue(obj);
 };
 
 export function CitationHarmonizer({ documentId, documentText }: Props) {
@@ -20,7 +64,20 @@ export function CitationHarmonizer({ documentId, documentText }: Props) {
     setLoading(true);
     try {
       const res = await aiService.suggestCitations(documentId, documentText);
-      setResult(typeof res === 'string' ? res : JSON.stringify(res, null, 2));
+      
+      // Format the response to remove JSON formatting and create clean text
+      let formattedResult: string;
+      
+      if (typeof res === 'string') {
+        formattedResult = res;
+      } else if (typeof res === 'object' && res !== null) {
+        // Convert JSON object to formatted text with headings and bullet points
+        formattedResult = formatJsonToText(res);
+      } else {
+        formattedResult = String(res);
+      }
+      
+      setResult(formattedResult);
     } catch (error) {
       setResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
@@ -59,15 +116,12 @@ export function CitationHarmonizer({ documentId, documentText }: Props) {
         </div>
       </div>
 
-      {result && (
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <h5 className="font-medium text-gray-900 mb-3">Citation Suggestions</h5>
-          <div className="prose prose-sm max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
-              {result}
-            </pre>
-          </div>
-        </div>
+      {(result || loading) && (
+        <ResponseDisplay
+          title="Citation Suggestions"
+          content={result || ''}
+          isLoading={loading}
+        />
       )}
     </div>
   );

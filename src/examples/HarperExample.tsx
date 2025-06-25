@@ -98,19 +98,10 @@ export function RichEditor({ value, onChange, highlights = [], onApplyFix }: Pro
     // Remove all existing highlights
     editor.commands.unsetHighlight();
 
-    // Debug log highlights before processing
-    console.log('Highlights to apply:', highlights);
-    
     // Sort highlights by start position in descending order to avoid position shifts
     const sortedHighlights = [...highlights].sort((a, b) => b.start - a.start);
 
     sortedHighlights.forEach(({ start, end, type, incorrect, correction, message }) => {
-      // Validate positions before applying highlight
-      if (typeof start !== 'number' || typeof end !== 'number' || isNaN(start) || isNaN(end) || start < 0 || end < start) {
-        console.warn('Skipping invalid highlight:', { start, end, type });
-        return;
-      }
-      
       try {
         // Set text selection for the error
         editor.commands.setTextSelection({ from: start + 1, to: end + 1 });

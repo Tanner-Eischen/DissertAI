@@ -7,27 +7,37 @@ import { ToolTabs } from '@/components/ToolTabs';
 import { Header } from '@/components/ui/Header';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { StatusBar } from '@/components/ui/StatusBar';
+import { ToastContainer, useToast } from '@/components/ui/Toast';
 
 export default function Editor() {
-  const { currentDoc, setDoc, updateContent } = useDocumentStore();
-  const [issues, setIssues] = useState<any[]>([]);
-  const [highlights, setHighlights] = useState<{ start: number; end: number }[]>([]);
+  const { currentDoc, setDoc, updateContent, refreshDocuments } = useDocumentStore();
+  const { toasts, showSuccess, showError, removeToast } = useToast();
+
+  // Initialize with a local document if none exists
+  useEffect(() => {
+    if (!currentDoc) {
+      const localDoc = {
+        id: 'local-' + Date.now(),
+        title: 'Untitled Document',
+        content: ''
+      };
+      console.log('Initializing with local document:', localDoc);
+      setDoc(localDoc);
+    }
+  }, [currentDoc, setDoc]);
+  const [issues, setIssues] = useState<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation'; message: string }[]>([]);
+  const [highlights, setHighlights] = useState<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation' }[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [wordCount, setWordCount] = useState(0);
 
-  // Only create a document if none exists
-  useEffect(() => {
-    if (!currentDoc) {
-      (async () => {
-        try {
-          const doc = await createDocument();
-          setDoc(doc);
-        } catch (error) {
-          console.error('Failed to create initial document:', error);
-        }
-      })();
+  const handleNewDocument = async () => {
+    try {
+      const doc = await createDocument();
+      setDoc(doc);
+    } catch (error) {
+      console.error('Failed to create new document:', error);
     }
-  }, [currentDoc, setDoc]);
+  };
 
   useEffect(() => {
     if (currentDoc?.content) {
@@ -38,34 +48,77 @@ export default function Editor() {
     }
   }, [currentDoc?.content]);
 
-  const handleCheck = async () => {
+  // Remove duplicate grammar checking in Editor since GrammarChecker component handles it
+  const [grammarErrors, setGrammarErrors] = useState<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation'; message: string; incorrect: string; correction: string }[]>([]);
+
+  const handleApplyFix = (start: number, end: number, correction: string) => {
     if (!currentDoc) return;
-    try {
-      const result = await checkSpelling(currentDoc.id, currentDoc.content);
-      setIssues(result.issues || []);
-      setHighlights(result.issues?.map((i: any) => ({ start: i.start, end: i.end })) || []);
-    } catch (error) {
-      console.error('Spell check failed:', error);
-    }
+    
+    const content = currentDoc.content || '';
+    const newContent = content.slice(0, start) + correction + content.slice(end);
+    updateContent(newContent);
   };
+
+  useEffect(() => {
+    setHighlights(grammarErrors);
+    setIssues(grammarErrors);
+  }, [grammarErrors]);
+
 
   const handleSave = async () => {
     if (currentDoc) {
+      console.log('Attempting to save document:', {
+        id: currentDoc.id,
+        contentLength: currentDoc.content?.length || 0,
+        title: currentDoc.title
+      });
+      
       try {
-        await saveDocument(currentDoc.id, currentDoc.content);
+        // Check if this is a local document that needs to be created in the database
+        if (currentDoc.id.startsWith('local-')) {
+          console.log('Creating new document in database for local document');
+          const newDoc = await createDocument(currentDoc.title);
+          // Update the document with the current content
+          await saveDocument(newDoc.id, currentDoc.content || '');
+          // Update the local state with the new document ID
+          setDoc({ ...currentDoc, id: newDoc.id });
+          console.log('✅ Local document created and saved to database with ID:', newDoc.id);
+          showSuccess('Document saved successfully!');
+        } else {
+          // Regular save for existing database documents
+          await saveDocument(currentDoc.id, currentDoc.content || '');
+          console.log('✅ Document saved successfully to database');
+          showSuccess('Document saved successfully!');
+        }
+        // Refresh the document list in the sidebar
+        refreshDocuments();
       } catch (error) {
-        console.error('Save failed:', error);
+        console.error('❌ Save failed:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+        showError('Failed to save document. Please try again.');
       }
+    } else {
+      console.warn('⚠️ No document to save');
     }
   };
 
   const handleContentChange = (text: string) => {
+    console.log('Content change received:', text); // Debug log
     updateContent(text);
   };
 
+  // Debug logging for document and content changes
+  useEffect(() => {
+    console.log('Current document state:', currentDoc);
+  }, [currentDoc]);
+
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <Header />
+      <Header onNewDocument={handleNewDocument} onSave={handleSave} />
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
       
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
@@ -78,14 +131,15 @@ export default function Editor() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
               <div className="lg:col-span-2 flex flex-col">
                 <RichEditor
-                  value={currentDoc?.content || ''}
+                  value={currentDoc?.content}
                   onChange={handleContentChange}
                   highlights={highlights}
+                  onApplyFix={handleApplyFix}
                 />
               </div>
               
               <div className="lg:col-span-1">
-                <ToolTabs />
+                <ToolTabs onGrammarErrorsChange={setGrammarErrors} onApplyFix={handleApplyFix} />
               </div>
             </div>
           </div>

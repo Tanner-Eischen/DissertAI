@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, FileText, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Plus, Trash2 } from 'lucide-react';
 import { useDocumentStore } from '@/store/useDocumentStore';
-import { createDocument, loadDocuments } from '@/services/documentService';
+import { createDocument, loadDocuments, deleteDocument } from '@/services/documentService';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -11,12 +11,13 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const { currentDoc, setDoc } = useDocumentStore();
+  const { currentDoc, setDoc, setDocumentListRefreshCallback } = useDocumentStore();
 
-  // Load documents on component mount
+  // Load documents on component mount and register refresh callback
   useEffect(() => {
     loadDocumentList();
-  }, []);
+    setDocumentListRefreshCallback(loadDocumentList);
+  }, [setDocumentListRefreshCallback]);
 
   const loadDocumentList = async () => {
     try {
@@ -45,7 +46,21 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
   const handleSelectDocument = (doc: any) => {
     setDoc(doc);
   };
+  const handleDeleteDocument = async (id: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this document?')) return;
 
+    try {
+      await deleteDocument(id);
+      if (currentDoc?.id === id) {
+        const remainingDocs = documents.filter(doc => doc.id !== id);
+        setDoc(remainingDocs.length > 0 ? remainingDocs[0] : null);
+      }
+      await loadDocumentList();
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+    }
+  };
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -98,7 +113,7 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 <div
                   key={doc.id}
                   onClick={() => handleSelectDocument(doc)}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors group ${
+                  className={`group p-3 rounded-lg cursor-pointer transition-colors ${
                     currentDoc?.id === doc.id 
                       ? 'bg-primary-50 border border-primary-200' 
                       : 'hover:bg-gray-50'
@@ -120,6 +135,12 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                         {formatDate(doc.updated_at || doc.created_at)}
                       </p>
                     </div>
+                    <button
+                      onClick={(e) => handleDeleteDocument(doc.id, e)}
+                      className="p-1 hover:bg-gray-200 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500" />
+                    </button>
                   </div>
                 </div>
               ))}

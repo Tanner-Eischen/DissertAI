@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FileText, Loader2, Sparkles } from 'lucide-react';
 import { aiService } from '@/lib/ai';
+import { ResponseDisplay } from './ResponseDisplay';
 
 interface Props {
   documentId: string;
@@ -59,15 +60,12 @@ export function AbstractSynthesizer({ documentId, documentText }: Props) {
         </div>
       </div>
 
-      {result && (
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <h5 className="font-medium text-gray-900 mb-3">Generated Abstract</h5>
-          <div className="prose prose-sm max-w-none">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans leading-relaxed">
-              {result}
-            </pre>
-          </div>
-        </div>
+      {(result || loading) && (
+        <ResponseDisplay
+          title="Generated Abstract"
+          content={result || ''}
+          isLoading={loading}
+        />
       )}
     </div>
   );

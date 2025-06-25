@@ -5,4 +5,9 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 // ESM-compatible config
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
+  server: {
+    fs: {
+      allow: ['..'],
+    },
+  },
 });

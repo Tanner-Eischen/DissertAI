@@ -10,7 +10,7 @@ export type ToolName =
   | 'abstract-synthesizer';
 
 export const TOOLS: { name: ToolName; label: string }[] = [
-//   { name: 'spellcheck', label: 'Spell Check' },
+  { name: 'spellcheck', label: 'Grammar Check' },
   { name: 'argument-mapper', label: 'Argument Graph' },
   { name: 'citation-annotator', label: 'Citation Fixer' },
   { name: 'optimize-thesis', label: 'Thesis Optimizer' },

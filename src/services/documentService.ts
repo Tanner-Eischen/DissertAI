@@ -40,6 +40,29 @@ export async function loadDocuments() {
   return data || [];
 }
 
+export async function updateDocumentTitle(id: string, title: string) {
+  const { error } = await supabase
+    .from(table)
+    .update({ 
+      title,
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', id);
+    
+  if (error) throw error;
+}
+
+export async function deleteDocument(id: string) {
+  const { error } = await supabase
+    .from(table)
+    .delete()
+    .eq('id', id);
+    
+  if (error) throw error;
+}
+  
+ 
+
 export async function loadDocument(id: string) {
   const { data, error } = await supabase
     .from(table)
@@ -51,11 +74,3 @@ export async function loadDocument(id: string) {
   return data;
 }
 
-export async function deleteDocument(id: string) {
-  const { error } = await supabase
-    .from(table)
-    .delete()
-    .eq('id', id);
-  
-  if (error) throw error;
-}
