@@ -18,7 +18,7 @@ import { CitationHarmonizer } from './ai-tools/CitationHarmonizer';
 import { VirtualReviewer } from './ai-tools/VirtualReviewer';
 import { AbstractSynthesizer } from './ai-tools/AbstractSynthesizer';
 import { GrammarChecker } from './ai-tools/GrammarChecker';
-
+import type { GrammarError } from '@/lib/ai';
 
 const toolIcons = {
   'spellcheck': Check,
@@ -30,7 +30,7 @@ const toolIcons = {
 } as const;
 
 interface Props {
-  onGrammarErrorsChange?: (errors: Array<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation'; message: string; incorrect: string; correction: string }>) => void;
+  onGrammarErrorsChange?: (errors: GrammarError[]) => void;
   onApplyFix?: (start: number, end: number, correction: string) => void;
 }
 

@@ -1,5 +1,4 @@
 // Sapling API type definitions
-// This file maintains the same name for backward compatibility
 
 export interface SaplingEdit {
   id: string;

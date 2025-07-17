@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Quote, Loader2, BookOpen } from 'lucide-react';
+import { Quote, Loader2, BookOpen, AlertCircle } from 'lucide-react';
 import { aiService } from '@/lib/ai';
 import { ResponseDisplay } from './ResponseDisplay';
+import { handleAsyncOperation, logError, ERROR_MESSAGES } from '@/lib/errorHandling';
 
 type Props = {
   documentId: string;
@@ -54,35 +55,54 @@ const formatJsonToText = (obj: any): string => {
 export function CitationHarmonizer({ documentId, documentText }: Props) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRun = async () => {
     if (!documentText.trim()) {
       setResult('Please add some content to your document first.');
+      setError(null);
       return;
     }
 
     setLoading(true);
-    try {
-      const res = await aiService.suggestCitations(documentId, documentText);
-      
+    setError(null);
+    setResult(null);
+
+    const { data, error: operationError } = await handleAsyncOperation(
+      () => aiService.suggestCitations(documentId, documentText),
+      {
+        component: 'CitationHarmonizer',
+        operation: 'suggestCitations',
+        onError: (error) => {
+          setError(error.message);
+          logError(error, {
+            component: 'CitationHarmonizer',
+            operation: 'suggestCitations',
+            additionalInfo: { documentId, textLength: documentText.length }
+          });
+        }
+      }
+    );
+
+    if (data) {
       // Format the response to remove JSON formatting and create clean text
       let formattedResult: string;
       
-      if (typeof res === 'string') {
-        formattedResult = res;
-      } else if (typeof res === 'object' && res !== null) {
+      if (typeof data === 'string') {
+        formattedResult = data;
+      } else if (typeof data === 'object' && data !== null) {
         // Convert JSON object to formatted text with headings and bullet points
-        formattedResult = formatJsonToText(res);
+        formattedResult = formatJsonToText(data);
       } else {
-        formattedResult = String(res);
+        formattedResult = String(data);
       }
       
       setResult(formattedResult);
-    } catch (error) {
-      setResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setLoading(false);
+    } else if (operationError) {
+      setError(operationError.message || ERROR_MESSAGES.AI_SERVICE_UNAVAILABLE);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -115,6 +135,18 @@ export function CitationHarmonizer({ documentId, documentText }: Props) {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+            <div>
+              <h5 className="text-sm font-medium text-red-800 mb-1">Error</h5>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {(result || loading) && (
         <ResponseDisplay

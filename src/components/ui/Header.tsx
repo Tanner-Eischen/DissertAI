@@ -66,7 +66,7 @@ export function Header({ onNewDocument, onSave }: HeaderProps) {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <FileText className="w-6 h-6 text-primary-600" />
-            <h1 className="text-xl font-semibold text-gray-900">Word-Wise</h1>
+            <h1 className="text-xl font-semibold text-gray-900">DissertAI</h1>
           </div>
           <div className="h-6 w-px bg-gray-300" />
           <div className="text-sm text-gray-600">

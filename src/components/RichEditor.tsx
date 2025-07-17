@@ -4,6 +4,7 @@ import Highlight from '@tiptap/extension-highlight';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Extension } from '@tiptap/core';
 import { useEffect } from 'react';
+import type { GrammarError } from '@/lib/ai';
 
 // Extend the Highlight extension to support tooltips and borders
 const CustomHighlight = Highlight.configure({
@@ -39,24 +40,17 @@ const CustomHighlight = Highlight.configure({
 });
 
 interface Props {
-  value: string;
+  value?: string;
   onChange: (text: string) => void;
-  highlights?: {
-    start: number;
-    end: number;
-    type: 'grammar' | 'spelling' | 'punctuation';
-    incorrect: string;
-    correction: string;
-    message?: string;
-  }[];
+  highlights?: GrammarError[];
   onApplyFix?: (start: number, end: number, correction: string) => void;
 }
 
-export function RichEditor({ value, onChange, highlights = [], onApplyFix }: Props) {
+export function RichEditor({ value = '', onChange, highlights = [], onApplyFix }: Props) {
   const editor = useEditor({
-    // Initialize with empty content if value is undefined
+    // Initialize with the value (defaults to empty string)
     onBeforeCreate({ editor }) {
-      editor.setOptions({ content: value === undefined ? '' : value });
+      editor.setOptions({ content: value });
     },
     editable: true,
     extensions: [
@@ -67,7 +61,7 @@ export function RichEditor({ value, onChange, highlights = [], onApplyFix }: Pro
         emptyEditorClass: 'is-editor-empty',
       }),
     ],
-    content: value === undefined ? '' : value,
+    content: value,
     autofocus: 'end',
     onUpdate: ({ editor }) => {
       const text = editor.getText();
@@ -86,7 +80,7 @@ export function RichEditor({ value, onChange, highlights = [], onApplyFix }: Pro
 
   // Update editor content when value prop changes
   useEffect(() => {
-    if (editor && value !== undefined && value !== editor.getText()) {
+    if (editor && value !== editor.getText()) {
       editor.commands.setContent(value);
     }
   }, [editor, value]);
@@ -112,8 +106,20 @@ export function RichEditor({ value, onChange, highlights = [], onApplyFix }: Pro
       }
       
       try {
+        // TipTap uses 1-based positions, but our errors use 0-based positions
+        // Convert 0-based positions to 1-based for TipTap
+        const tiptapStart = start + 1;
+        const tiptapEnd = end + 1;
+        
+        // Validate TipTap positions against document length
+        const docSize = editor.state.doc.content.size;
+        if (tiptapStart > docSize || tiptapEnd > docSize) {
+          console.warn('Highlight position exceeds document size:', { start, end, docSize });
+          return;
+        }
+        
         // Set text selection for the error
-        editor.commands.setTextSelection({ from: start + 1, to: end + 1 });
+        editor.commands.setTextSelection({ from: tiptapStart, to: tiptapEnd });
 
         // Apply highlight with color based on error type
         const color = type === 'spelling' ? '#fecaca' : type === 'grammar' ? '#fef3c7' : '#dbeafe';
@@ -121,9 +127,12 @@ export function RichEditor({ value, onChange, highlights = [], onApplyFix }: Pro
         
         const tooltipText = message ? `${message} | Suggestion: ${correction}` : `${type.charAt(0).toUpperCase() + type.slice(1)} error: "${incorrect}" → "${correction}"`;
         
-        editor.commands.setHighlight({
-          color,
-          borderColor: borderColor,
+        // Apply highlight with custom attributes
+        editor.commands.setHighlight({ color });
+        
+        // Apply custom attributes using updateAttributes
+        editor.commands.updateAttributes('highlight', {
+          borderColor,
           title: tooltipText,
         });
       } catch (error) {

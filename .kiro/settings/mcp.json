@@ -1,0 +1,33 @@
+{
+    "mcpServers": {
+        "browser": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-browser@latest"
+            ],
+            "disabled": false,
+            "autoApprove": [
+                "screenshot",
+                "navigate",
+                "click",
+                "type",
+                "get_page_content"
+            ]
+        },
+        "playwright": {
+            "command": "uvx",
+            "args": [
+                "mcp-playwright@latest"
+            ],
+            "disabled": false,
+            "autoApprove": [
+                "playwright_screenshot",
+                "playwright_navigate",
+                "playwright_click",
+                "playwright_type",
+                "playwright_get_page_content",
+                "playwright_wait_for_selector"
+            ]
+        }
+    }
+}

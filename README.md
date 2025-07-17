@@ -1,5 +1,5 @@
 
-# Word-Wise Writing Assistant (Starter)
+# DissertAI Writing Assistant
 
 This is a minimal working starter for your Grammarly-like AI writing assistant using React, TipTap, Zustand, and Supabase.
 
@@ -94,5 +94,5 @@ The app now includes Sapling, a powerful AI-powered grammar checker that provide
 - **Comprehensive Analysis** - Detailed error explanations and suggestions
 - **Cloud-based Processing** - Leverages Sapling's advanced AI models
 
-See `HARPER_INTEGRATION.md` for detailed documentation and `src/examples/HarperExample.tsx` for usage examples.
+See `sapling_INTEGRATION.md` for detailed documentation and `src/components/SaplingTest.tsx` for usage examples.
 

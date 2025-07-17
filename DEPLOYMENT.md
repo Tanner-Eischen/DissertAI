@@ -55,8 +55,10 @@ Make sure to set these in your deployment platform:
 
 - `VITE_SUPABASE_URL`: Your Supabase project URL
 - `VITE_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `VITE_SUPABASE_FUNCTIONS_URL`: Your Supabase Edge Functions URL
 - `VITE_OPENAI_API_KEY`: Your OpenAI API key (for AI tools)
-- `VITE_HARPER_API_KEY`: Harper API key (optional)
+- `VITE_SAPLING_PUBLIC_KEY`: Sapling public API key (optional)
+- `VITE_SAPLING_PRIVATE_KEY`: Sapling private API key (optional)
 
 ## Testing Production Build Locally
 

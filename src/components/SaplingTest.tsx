@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { harperService } from '@/lib/harper';
-import type { HarperError } from '@/lib/harper';
-export function HarperTest() {
+import { saplingService } from '@/lib/sapling';
+import type { SaplingError } from '@/lib/sapling';
+export function SaplingTest() {
   const [text, setText] = useState('This are a test sentence with some grammar mistake.');
-  const [errors, setErrors] = useState<HarperError[]>([]);
+  const [errors, setErrors] = useState<SaplingError[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState(false);
 
   useEffect(() => {
     const checkSapling = async () => {
       try {
-        await harperService.initialize();
-        setIsAvailable(harperService.isAvailable());
+        await saplingService.initialize();
+        setIsAvailable(saplingService.isAvailable());
       } catch (error) {
         console.error('Sapling initialization failed:', error);
         setIsAvailable(false);
@@ -24,7 +24,7 @@ export function HarperTest() {
   const handleCheck = async () => {
     setIsLoading(true);
     try {
-      const result = await harperService.checkText(text);
+      const result = await saplingService.checkText(text);
       setErrors(result);
     } catch (error) {
       console.error('Sapling check failed:', error);
@@ -34,7 +34,7 @@ export function HarperTest() {
     }
   };
 
-  const applyFix = (error: HarperError) => {
+  const applyFix = (error: SaplingError) => {
     const newText = text.slice(0, error.start) + error.correction + text.slice(error.end);
     setText(newText);
     setErrors([]);

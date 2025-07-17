@@ -1,6 +1,7 @@
 {
+
   "compilerOptions": {
-    "types": ["vite/client", "vite-plugin-pwa/client"],
+
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "target": "ESNext",
     "useDefineForClassFields": true,

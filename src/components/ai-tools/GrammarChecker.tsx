@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { checkSpelling, type GrammarError } from '@/lib/ai';
+import { handleAsyncOperation, logError, ERROR_MESSAGES } from '@/lib/errorHandling';
 
 interface Props {
   documentId: string;
@@ -13,47 +14,72 @@ export function GrammarChecker({ documentId, documentText, onErrorsChange, onApp
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<GrammarError[]>([]);
   const [error, setError] = useState<string>();
+  const [retryCount, setRetryCount] = useState(0);
+
+  const checkGrammar = async (isRetry = false) => {
+    if (!documentText.trim()) {
+      setErrors([]);
+      onErrorsChange?.([]);
+      setError(undefined);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(undefined);
+
+    const { data, error: operationError } = await handleAsyncOperation(
+      () => checkSpelling(documentText),
+      {
+        component: 'GrammarChecker',
+        operation: 'checkSpelling',
+        fallback: { errors: [] },
+        onError: (error) => {
+          setError(error.message || ERROR_MESSAGES.GRAMMAR_CHECK_FAILED);
+          logError(error, {
+            component: 'GrammarChecker',
+            operation: 'checkSpelling',
+            additionalInfo: { 
+              documentId, 
+              textLength: documentText.length,
+              retryCount: isRetry ? retryCount + 1 : 0
+            }
+          });
+        }
+      }
+    );
+
+    if (data) {
+      const newErrors = data.errors || [];
+      setErrors(newErrors);
+      onErrorsChange?.(newErrors);
+      if (isRetry) {
+        setRetryCount(0); // Reset retry count on success
+      }
+    } else if (operationError) {
+      setErrors([]);
+      onErrorsChange?.([]);
+      if (isRetry) {
+        setRetryCount(prev => prev + 1);
+      }
+    }
+
+    setIsLoading(false);
+  };
+
+  const handleRetry = () => {
+    checkGrammar(true);
+  };
 
   useEffect(() => {
     let isMounted = true;
-    let debounceTimeout: NodeJS.Timeout | null = null;
+    let debounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const checkGrammar = async () => {
-      if (!documentText.trim()) {
-        if (isMounted) {
-          setErrors([]);
-          onErrorsChange?.([]);
-        }
-        return;
-      }
-
-      try {
-        if (!isMounted) return;
-
-        setIsLoading(true);
-        setError(undefined);
-
-        const result = await checkSpelling(documentText);
-        
-        if (!isMounted) return;
-
-        const newErrors = result.errors || [];
-        setErrors(newErrors);
-        onErrorsChange?.(newErrors);
-      } catch (err) {
-        if (!isMounted) return;
-
-        const errorMessage = err instanceof Error ? err.message : 'Failed to check grammar';
-        console.error('Grammar check error:', errorMessage);
-        setError(errorMessage);
-        setErrors([]);
-        onErrorsChange?.([]);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+    const debouncedCheck = () => {
+      if (!isMounted) return;
+      checkGrammar();
     };
 
-    debounceTimeout = setTimeout(checkGrammar, 1000);
+    debounceTimeout = setTimeout(debouncedCheck, 1000);
     
     return () => {
       isMounted = false;
@@ -63,8 +89,34 @@ export function GrammarChecker({ documentId, documentText, onErrorsChange, onApp
 
   if (error) {
     return (
-      <div className="p-4 text-red-500">
-        <p>{error}</p>
+      <div className="p-4">
+        <h3 className="text-lg font-semibold mb-4">Grammar & Spelling Check</h3>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <h5 className="text-sm font-medium text-red-800 mb-1">Grammar Check Failed</h5>
+              <p className="text-sm text-red-700 mb-3">{error}</p>
+              <button
+                onClick={handleRetry}
+                disabled={isLoading}
+                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-md hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                )}
+                Retry
+              </button>
+              {retryCount > 0 && (
+                <p className="text-xs text-red-600 mt-2">
+                  Retry attempts: {retryCount}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

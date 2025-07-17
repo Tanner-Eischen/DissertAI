@@ -1,10 +1,10 @@
 # Sapling Grammar API Integration
 
-This document explains the Sapling grammar checker integration in the Word-Wise writing assistant.
+This document explains the Sapling grammar checker integration in the DissertAI writing assistant.
 
 ## Overview
 
-Sapling is a powerful, AI-powered grammar checker that provides precise and consistent error detection through its REST API. It has been integrated into the Word-Wise application to replace the previous Harper implementation.
+Sapling is a powerful, AI-powered grammar checker that provides precise and consistent error detection through its REST API. It has been integrated into the DissertAI application to replace the previous Harper implementation.
 
 ## Features
 
@@ -19,37 +19,37 @@ Sapling is a powerful, AI-powered grammar checker that provides precise and cons
 
 ### Core Components
 
-1. **`src/lib/harper.ts`** - Main Sapling service implementation (renamed for compatibility)
+1. **`src/lib/sapling.ts`** - Main Sapling service implementation
 - Singleton service for API communication
 - Text processing and error detection via REST API
 - Error classification and formatting
 - Graceful error handling and retry logic
 
-2. **`src/types/harper.d.ts`** - TypeScript declarations for Sapling API
+2. **`src/types/sapling.d.ts`** - TypeScript declarations for Sapling API
 - Proper type definitions for Sapling API responses
 - Interface definitions for errors and suggestions
 
-3. **`src/components/HarperTest.tsx`** - Test component for Sapling functionality
+3. **`src/components/SaplingTest.tsx`** - Test component for Sapling functionality
 - Interactive testing interface
 - Real-time error display
 - Grammar checking demonstration
 
-4. **`src/examples/HarperExample.tsx`** - Usage examples and integration patterns
-- Rich text editor integration
-- Highlight and tooltip functionality
-- Error correction workflows
+4. **`src/components/RichEditor.tsx`** - Rich text editor with grammar checking integration
+- Rich text editor with highlight functionality
+- Error visualization with tooltips
+- Grammar correction workflows
 
 ### Sapling Service API
 
 ```typescript
 // Initialize Sapling (called automatically)
-await harperService.initialize();
+await saplingService.initialize();
 
 // Check text for errors
-const errors = await harperService.checkText("Your text here");
+const errors = await saplingService.checkText("Your text here");
 
 // Check if Sapling is available
-const isReady = harperService.isAvailable();
+const isReady = saplingService.isAvailable();
 ```
 
 ### Error Interface
@@ -73,10 +73,10 @@ type HarperError = SaplingError;
 ### Basic Text Checking
 
 ```typescript
-import { harperService } from '@/lib/harper';
+import { saplingService } from '@/lib/sapling';
 
 const text = "This are a test sentence.";
-const errors = await harperService.checkText(text);
+const errors = await saplingService.checkText(text);
 console.log(errors); // Array of SaplingError objects
 ```
 
@@ -109,7 +109,7 @@ The integration uses pre-configured API keys:
 
 The integration includes robust error handling:
 
-- **Graceful Degradation**: If Harper fails to initialize, the app continues to work without grammar checking
+- **Graceful Degradation**: If Sapling fails to initialize, the app continues to work without grammar checking
 - **Retry Logic**: Automatic retry on temporary failures
 - **User Feedback**: Clear error messages when issues occur
 - **Fallback**: Empty error array returned on failures to prevent crashes
@@ -117,7 +117,7 @@ The integration includes robust error handling:
 ## Performance Considerations
 
 - **Debounced Checking**: 1-second delay after typing stops before checking
-- **Lazy Initialization**: Harper is only loaded when first needed
+- **Lazy Initialization**: Sapling is only loaded when first needed
 - **Efficient Updates**: Only re-highlights when errors change
 - **Memory Management**: Proper cleanup of editor instances
 
@@ -125,13 +125,13 @@ The integration includes robust error handling:
 
 ### Common Issues
 
-1. **Harper not initializing**
-   - Check browser console for WebAssembly support
-   - Ensure harper.js package is properly installed
-   - Verify network connectivity for binary loading
+1. **Sapling not initializing**
+   - Check browser console for API connectivity
+   - Ensure API keys are properly configured
+   - Verify network connectivity for API requests
 
-2. **TypeScript errors**
-   - Ensure `src/types/harper.d.ts` is included in tsconfig
+3. **TypeScript errors**
+   - Ensure `src/types/sapling.d.ts` is included in tsconfig
    - Check that typeRoots includes the types directory
 
 3. **Highlighting not working**
@@ -141,7 +141,7 @@ The integration includes robust error handling:
 
 ### Debug Mode
 
-Enable debug logging by opening browser console. The Harper service logs:
+Enable debug logging by opening browser console. The Sapling service logs:
 - Initialization status
 - Error detection results
 - Performance metrics
@@ -157,10 +157,10 @@ Enable debug logging by opening browser console. The Harper service logs:
 
 ## Dependencies
 
-- `harper.js`: ^0.44.0 - Core Harper grammar checker
+- Sapling API integration - Cloud-based grammar checking service
 - `@tiptap/react`: Editor framework for highlighting
 - `@tiptap/extension-highlight`: Text highlighting extension
 
 ## License
 
-Harper is licensed under the Apache License 2.0. See the [Harper repository](https://github.com/elijah-potter/harper) for more details.
+This integration uses the Sapling API service. See the [Sapling website](https://sapling.ai) for more details about their grammar checking service.

@@ -8,7 +8,7 @@ type Doc = {
 
 type Store = {
   currentDoc: Doc | null;
-  setDoc: (doc: Doc) => void;
+  setDoc: (doc: Doc | null) => void;
   updateContent: (text: string) => void;
   updateTitle: (title: string) => void;
   refreshDocuments: () => void;

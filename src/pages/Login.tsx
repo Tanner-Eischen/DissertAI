@@ -10,6 +10,7 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,13 +20,16 @@ export function Login() {
     try {
       if (isSignUp) {
         await signUp(email, password);
-        setError('Please check your email for verification link');
+        setMessage('Account created! Please check your email for a verification link before signing in.');
+        setError('');
+        // Don't navigate immediately - user needs to verify email first
       } else {
         await signIn(email, password);
         navigate('/');
       }
     } catch (err: any) {
       setError(err.message);
+      setMessage('');
     } finally {
       setLoading(false);
     }
@@ -78,6 +82,10 @@ export function Login() {
           {error && (
             <div className="text-sm text-center text-red-600">{error}</div>
           )}
+          
+          {message && (
+            <div className="text-sm text-center text-green-600 bg-green-50 p-3 rounded-md">{message}</div>
+          )}
 
           <div>
             <button
@@ -92,7 +100,11 @@ export function Login() {
           <div className="text-sm text-center">
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError('');
+                setMessage('');
+              }}
               className="font-medium text-primary-600 hover:text-primary-500"
             >
               {isSignUp

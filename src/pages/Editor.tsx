@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useDocumentStore } from '@/store/useDocumentStore';
 import { createDocument, saveDocument } from '@/services/documentService';
-import { checkSpelling } from '@/lib/ai';
+import { checkSpelling, type GrammarError } from '@/lib/ai';
 import { RichEditor } from '@/components/RichEditor';
 import { ToolTabs } from '@/components/ToolTabs';
 import { Header } from '@/components/ui/Header';
 import { Sidebar } from '@/components/ui/Sidebar';
 import { StatusBar } from '@/components/ui/StatusBar';
 import { ToastContainer, useToast } from '@/components/ui/Toast';
+
+// Type guard for error objects
+function isError(error: unknown): error is Error {
+  return error instanceof Error;
+}
 
 export default function Editor() {
   const { currentDoc, setDoc, updateContent, refreshDocuments } = useDocumentStore();
@@ -25,8 +30,8 @@ export default function Editor() {
       setDoc(localDoc);
     }
   }, [currentDoc, setDoc]);
-  const [issues, setIssues] = useState<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation'; message: string }[]>([]);
-  const [highlights, setHighlights] = useState<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation' }[]>([]);
+  const [issues, setIssues] = useState<GrammarError[]>([]);
+  const [highlights, setHighlights] = useState<GrammarError[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [wordCount, setWordCount] = useState(0);
 
@@ -36,6 +41,14 @@ export default function Editor() {
       setDoc(doc);
     } catch (error) {
       console.error('Failed to create new document:', error);
+      if (isError(error)) {
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
+      } else {
+        console.error('Unknown error type:', typeof error);
+      }
     }
   };
 
@@ -49,7 +62,7 @@ export default function Editor() {
   }, [currentDoc?.content]);
 
   // Remove duplicate grammar checking in Editor since GrammarChecker component handles it
-  const [grammarErrors, setGrammarErrors] = useState<{ start: number; end: number; type: 'grammar' | 'spelling' | 'punctuation'; message: string; incorrect: string; correction: string }[]>([]);
+  const [grammarErrors, setGrammarErrors] = useState<GrammarError[]>([]);
 
   const handleApplyFix = (start: number, end: number, correction: string) => {
     if (!currentDoc) return;
@@ -94,10 +107,14 @@ export default function Editor() {
         refreshDocuments();
       } catch (error) {
         console.error('❌ Save failed:', error);
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack
-        });
+        if (isError(error)) {
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+          });
+        } else {
+          console.error('Unknown error type:', typeof error);
+        }
         showError('Failed to save document. Please try again.');
       }
     } else {
